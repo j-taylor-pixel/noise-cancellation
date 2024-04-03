@@ -1,0 +1,7 @@
+numpy
+pydub
+librosa
+noisereduce
+matplotlib
+numpy
+pesq
