@@ -2,6 +2,7 @@ from scipy.io import wavfile
 from pesq import pesq
 from scipy.io import wavfile
 from scipy.signal import resample
+import os
 
 
 def resample_file(filename='test_rec.wav'):
@@ -33,6 +34,11 @@ def get_pesq_score(file_one='resampled_test_rec.wav', file_two='resampled_sensor
     score = pesq(ref_rate, ref_signal, deg_signal, 'wb')  # 'wb' for wide-band mode
 
     print(f'PESQ score: {score}')
+    if os.path.exists(file_one):
+        os.remove(file_one)
+    if os.path.exists(file_two):
+        os.remove(file_two)
+    
     return score
 
 
@@ -49,6 +55,10 @@ def trim_audio(filename):
 
     # Write the trimmed signal to a new file
     wavfile.write(f'trimmed_{filename}', rate, trimmed_signal)
+    if os.path.exists(filename):
+        os.remove(filename)
+    
+    
 
     return f'trimmed_{filename}'
 
@@ -61,7 +71,7 @@ def pesq_of_two_raw(file_one, file_two):
 
     return get_pesq_score(trim_one, trim_two)
 
-pesq_of_two_raw('test_rec.wav', 'processed2.wav')
+pesq_of_two_raw('test_rec.wav', 'uni_mix_reduced_output.wav')
 # 1.26, 1.13, 1.22 for sensor 1, 2, 3 compared to test_rec
 # unix mixed wave was 1.03
 # proccessed2 was 1.04
