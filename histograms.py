@@ -78,7 +78,7 @@ def histogram_of_amplitudes(filename):
     plt.title(f'Histogram of amplitudes of {filename}.wav')
 
     # Display the plot
-    plt.savefig(f'histograms/{filename}_histogram.png')
+    plt.savefig(f'histograms/amp_hist_{filename}.png')
     return max(signal) - min(signal)
 
 
@@ -119,7 +119,7 @@ def histogram_of_frequencies(filename):
     plt.title(f'Histogram of frequencies of {filename}')
 
     # Save the plot
-    plt.savefig(f'histograms/{filename}_frequency_histogram.png')
+    plt.savefig(f'histograms/freq_hist_{filename}.png')
     return
 
 
@@ -146,9 +146,19 @@ def histogram_of_volume_db(filename):
     # Here you can specify the title
     plt.title(f'Histogram of volume (dB) of {filename}')
     # Save the plot
-    plt.savefig(f'histograms/{filename}_volume_histogram.png')
+    plt.savefig(f'histograms/vol_db_hist{filename}.png')
     return
 
-#histogram_of_amplitudes('uni_mix_reduced_output.wav')
-histogram_of_frequencies('sensor_1.wav')
-#histogram_of_volume_db('test_rec.wav')
+def generate_histograms(filename):
+    #plot_waveform(filename)
+    histogram_of_amplitudes(filename)
+    histogram_of_frequencies(filename)
+    histogram_of_volume_db(filename)
+    return
+
+generate_histograms('test_rec.wav') # test set from pixel
+generate_histograms('processed2.wav') # simple addition fusion
+generate_histograms('sensor_1.wav') # raw and normalized
+generate_histograms('sensor_2.wav') # raw and normalized
+generate_histograms('sensor_3.wav') # raw and normalized
+generate_histograms('uni_mix_reduced_output.wav') # 
