@@ -10,6 +10,23 @@ def get_signal(filename):
     wav_file.close()
     return signal
 
+def get_framerate(filename):
+    wav_file = wave.open(filename, 'r')
+    framerate = wav_file.getframerate()
+    wav_file.close()
+    return framerate
+
+def compute_freq(signal, framerate):
+    # Compute the FFT of the signal and take the absolute value to get the magnitude
+    spectrum = np.abs(fft(signal))
+
+    # Compute the frequencies corresponding to the spectrum and only consider the positive frequencies
+    freq = np.fft.fftfreq(len(spectrum), 1 / framerate)
+    mask = freq > 0
+    spectrum = spectrum[mask]
+    freq = freq[mask]
+    return freq, spectrum
+
 def plot_waveform(filename='test_rec.wav'):
     wav_file = wave.open(filename, 'r')
 
@@ -48,23 +65,7 @@ def plot_waveform(filename='test_rec.wav'):
 
 # create histogram of amplitdues of audio file
 def histogram_of_amplitudes(filename):
-    wav_file = wave.open(filename, 'r')
-
-    # Get the frame rate
-    framerate = wav_file.getframerate()
-
-    # Calculate the number of frames that correspond to 30 seconds
-    num_frames = 30 * framerate
-
-    # Read the corresponding frames from the file
-    signal = wav_file.readframes(num_frames)
-    signal = np.frombuffer(signal, dtype='int16')
-
-    # Time axis in seconds
-    time = np.linspace(0., len(signal) / framerate, num=len(signal))
-
-    # Close the file
-    wav_file.close()
+    signal = get_signal(filename)
 
     # Create a new figure
     plt.figure()
@@ -78,38 +79,19 @@ def histogram_of_amplitudes(filename):
     # Label the axes
     plt.xlabel('Amplitude')
     plt.ylabel('Count')
-
-    # Here you can specify the title
     plt.title(f'Histogram of amplitudes of {filename}.wav')
 
-    # Display the plot
     plt.savefig(f'histograms/amp_hist_{filename}.png')
-    return max(signal) - min(signal)
+    plt.close()
+    return 
 
 
 def histogram_of_frequencies(filename):
-    # Open the file in read mode
-    wav_file = wave.open(filename, 'r')
-
-    # Read frames from the file
-    signal = wav_file.readframes(-1)
-    signal = np.frombuffer(signal, dtype='int16')
-
+    signal = get_signal(filename)
     # Get the frame rate
-    framerate = wav_file.getframerate()
+    framerate = get_framerate(filename)
 
-    # Close the file
-    wav_file.close()
-
-    # Compute the FFT of the signal and take the absolute value to get the magnitude
-    spectrum = np.abs(fft(signal))
-
-    # Compute the frequencies corresponding to the spectrum and only consider the positive frequencies
-    freq = np.fft.fftfreq(len(spectrum), 1 / framerate)
-    mask = freq > 0
-    spectrum = spectrum[mask]
-    freq = freq[mask]
-
+    freq, spectrum = compute_freq(signal, framerate)
     # Create a new figure
     plt.figure()
 
@@ -154,7 +136,7 @@ def histogram_of_volume_db(filename):
     plt.savefig(f'histograms/vol_db_hist{filename}.png')
     return
 
-def generate_histograms(filename):
+def generate_all_histograms(filename):
     #plot_waveform(filename)
     histogram_of_amplitudes(filename)
     histogram_of_frequencies(filename)
@@ -168,21 +150,15 @@ def number_of_samples(filename):
     wav_file.close()
     return num_frames
 
-def count_samples():
+def count_all_samples():
     for file in ['test_rec.wav', 'processed2.wav', 'sensor_1.wav', 'sensor_2.wav', 'sensor_3.wav', 'uni_mix_reduced_output.wav']:
         print(f'Number of samples in {file}: {number_of_samples(file)}')
         # all samples have 9595771 frames
     return
 
 def manhattan_distance_of_volume(file_one, file_two):
-    wav_file_one = wave.open(file_one, 'r')
-    wav_file_two = wave.open(file_two, 'r')
-    signal_one = wav_file_one.readframes(-1)
-    signal_two = wav_file_two.readframes(-1)
-    signal_one = np.frombuffer(signal_one, dtype='int16')
-    signal_two = np.frombuffer(signal_two, dtype='int16')
-    wav_file_one.close()
-    wav_file_two.close()
+    signal_one = get_signal(file_one)
+    signal_two = get_signal(file_two)
     if len(signal_two) > len(signal_one):
         signal_two = signal_two[::2]
     elif len(signal_one) > len(signal_two):
@@ -197,38 +173,26 @@ def manhattan_distance_of_volume(file_one, file_two):
     return manhattan_distance
 
 def manhattan_distance_amplitude(file_one, file_two):
-    wav_file_one = wave.open(file_one, 'r')
-    wav_file_two = wave.open(file_two, 'r')
-    signal_one = wav_file_one.readframes(-1)
-    signal_two = wav_file_two.readframes(-1)
-    signal_one = np.frombuffer(signal_one, dtype='int16')
-    signal_two = np.frombuffer(signal_two, dtype='int16')
+    signal_one = get_signal(file_one)
+    signal_two = get_signal(file_two)
 
     # remove every second value from signal_two if its longer than signal_one
     if len(signal_one) > len(signal_two):
         signal_one = signal_one[::2]
 
-    wav_file_one.close()
-    wav_file_two.close()
     manhattan_distance = np.sum(np.abs(signal_one - signal_two))
     manhattan_distance = "{:.3e}".format(manhattan_distance)
     print(f'Manhattan distance of amplitude between {file_one} and {file_two}: {manhattan_distance}')
     return manhattan_distance
 
 def manhattan_distance_frequence(file_one, file_two):
-    wav_file_one = wave.open(file_one, 'r')
-    wav_file_two = wave.open(file_two, 'r')
-    signal_one = wav_file_one.readframes(-1)
-    signal_two = wav_file_two.readframes(-1)
-    signal_one = np.frombuffer(signal_one, dtype='int16')
-    signal_two = np.frombuffer(signal_two, dtype='int16')
+    signal_one = get_signal(file_one)
+    signal_two = get_signal(file_two)
 
     # remove every second value from signal_two if its longer than signal_one
     if len(signal_one) > len(signal_two):
         signal_one = signal_one[::2]
 
-    wav_file_one.close()
-    wav_file_two.close()
     spectrum_one = np.abs(fft(signal_one))
     spectrum_two = np.abs(fft(signal_two))
     manhattan_distance = np.sum(np.abs(spectrum_one - spectrum_two))
@@ -238,14 +202,9 @@ def manhattan_distance_frequence(file_one, file_two):
     return manhattan_distance
 
 def normalize_amplitudes(file_one, file_two):    
-    wav_file_one = wave.open(file_one, 'r')
-    wav_file_two = wave.open(file_two, 'r')
-    signal_one = wav_file_one.readframes(-1)
-    signal_two = wav_file_two.readframes(-1)
-    signal_one = np.frombuffer(signal_one, dtype='int16')
-    signal_two = np.frombuffer(signal_two, dtype='int16')
-    wav_file_one.close()
-    wav_file_two.close()
+    signal_one = get_signal(file_one)
+    signal_two = get_signal(file_two)
+
     # normalize signal_two to signal_one
     signal_two = signal_two * np.average(signal_one) / np.average(signal_two)
     print(f'file 1: {np.average(signal_one)}, file 2: {np.average(signal_two)}')
@@ -253,6 +212,7 @@ def normalize_amplitudes(file_one, file_two):
     # Convert the normalized signal back to bytes
     signal_two_bytes = signal_two.astype(np.int16).tobytes()
 
+    wav_file_one = wave.open(file_one, 'r') # open file one to get parameters
     # Create a new wave file
     with wave.open('volume_segment_pcm_norm.wav', 'w') as wav_file:
         # Use the same parameters as the original file
@@ -262,27 +222,14 @@ def normalize_amplitudes(file_one, file_two):
     return signal_one, signal_two
 
 def compare_amp_hist(file_one, file_two):
-    wav_file_one = wave.open(file_one, 'r')
-    wav_file_two = wave.open(file_two, 'r')
-
-    # Get the frame rate
-    framerate = wav_file_one.getframerate()
-    # Calculate the number of frames that correspond to 30 seconds
-    num_frames = 30 * framerate
-
     # Read the corresponding frames from the file
-    signal_one = wav_file_one.readframes(num_frames)
-    signal_one = np.frombuffer(signal_one, dtype='int16')
-    signal_two = wav_file_two.readframes(num_frames)
-    signal_two = np.frombuffer(signal_two, dtype='int16')
+    signal_one = get_signal(file_one)
+    signal_two = get_signal(file_two)
     min_of_both = min(min(signal_one), min(signal_two))
     max_of_both = max(max(signal_one), max(signal_two))
     hist_1 = np.histogram(a=signal_one, bins=10, range=(min_of_both, max_of_both))
     hist_2 = np.histogram(a=signal_two, bins=10, range=(min_of_both, max_of_both))
 
-    # close the files
-    wav_file_one.close()
-    wav_file_two.close()
     # compute difference between histograms
     hist_diff = sum(np.abs(hist_1[0] - hist_2[0]))
     hist_diff = "{:.3e}".format(hist_diff)
@@ -290,34 +237,13 @@ def compare_amp_hist(file_one, file_two):
     return hist_diff
 
 def compare_freq_hist(file_one, file_two):
-    # Open the file in read mode
-    wav_file_one = wave.open(file_one, 'r')
-    wav_file_two = wave.open(file_two, 'r')
-    # Read frames from the file
-    signal_one = wav_file_one.readframes(-1)
-    signal_one = np.frombuffer(signal_one, dtype='int16')
-    signal_two = wav_file_two.readframes(-1)
-    signal_two = np.frombuffer(signal_two, dtype='int16')
+    signal_one = get_signal(file_one)
+    signal_two = get_signal(file_two)
     # Get the frame rate
-    framerate = wav_file_one.getframerate()
+    framerate = get_framerate(file_one)
 
-    # Close the file
-    wav_file_one.close()
-    wav_file_two.close()
-    # Compute the FFT of the signal and take the absolute value to get the magnitude
-    spectrum_one = np.abs(fft(signal_one))
-    spectrum_two = np.abs(fft(signal_two))
-
-    # Compute the frequencies corresponding to the spectrum and only consider the positive frequencies
-    freq_one = np.fft.fftfreq(len(spectrum_one), 1 / framerate)
-    freq_two = np.fft.fftfreq(len(spectrum_two), 1 / framerate)
-
-    mask_one = freq_one > 0
-    mask_two = freq_two > 0
-    spectrum_one = spectrum_one[mask_one]
-    spectrum_two = spectrum_two[mask_two]
-    freq_one = freq_one[mask_one]
-    freq_two = freq_two[mask_two]
+    freq_one, spectrum_one = compute_freq(signal_one, framerate)
+    freq_two, spectrum_two = compute_freq(signal_two, framerate)
 
     min_both = min(min(freq_one), min(freq_two))
     max_both = max(max(freq_one), max(freq_two))
@@ -333,14 +259,14 @@ def compare_freq_hist(file_one, file_two):
 
 
 if False:
-    generate_histograms('test_rec.wav') # test set from pixel
-    generate_histograms('processed2.wav') # simple addition fusion
-    generate_histograms('sensor_1.wav') # raw and normalized
-    generate_histograms('sensor_2.wav') # raw and normalized
-    generate_histograms('sensor_3.wav') # raw and normalized
-    generate_histograms('uni_mix_reduced_output.wav') # 
-if False:
-    generate_histograms('volume_segment_pcm_norm.wav')
+    generate_all_histograms('test_rec.wav') # test set from pixel
+    generate_all_histograms('processed2.wav') # simple addition fusion
+    generate_all_histograms('sensor_1.wav') # raw and normalized
+    generate_all_histograms('sensor_2.wav') # raw and normalized
+    generate_all_histograms('sensor_3.wav') # raw and normalized
+    generate_all_histograms('uni_mix_reduced_output.wav') # 
+    generate_all_histograms('volume_segment_pcm_norm.wav')
+    
 
 if False:
     for file in ['test_rec.wav', 'sensor_1.wav', 'sensor_2.wav', 'sensor_3.wav', 'processed2.wav', 'uni_mix_reduced_output.wav']:
@@ -356,5 +282,5 @@ if False:
 
 if True:
     for file in ['sensor_1.wav', 'sensor_2.wav', 'sensor_3.wav', 'processed2.wav', 'uni_mix_reduced_output.wav', 'volume_segment_pcm_norm.wav']:
-        compare_amp_hist('test_rec.wav', file)
-        #compare_freq_hist('test_rec.wav', file)
+        #compare_amp_hist('test_rec.wav', file)
+        compare_freq_hist('test_rec.wav', file)
