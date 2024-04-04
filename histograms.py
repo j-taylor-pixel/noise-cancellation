@@ -139,7 +139,7 @@ def histogram_of_volume_db(filename):
     # Create a new figure
     plt.figure()
     # Plot the histogram of the volume in dB
-    plt.hist(volume_db, bins='auto')
+    plt.hist(volume_db, bins=10)
     # Label the axes
     plt.xlabel('Volume [dB]')
     plt.ylabel('Count')
@@ -156,9 +156,91 @@ def generate_histograms(filename):
     histogram_of_volume_db(filename)
     return
 
-generate_histograms('test_rec.wav') # test set from pixel
-generate_histograms('processed2.wav') # simple addition fusion
-generate_histograms('sensor_1.wav') # raw and normalized
-generate_histograms('sensor_2.wav') # raw and normalized
-generate_histograms('sensor_3.wav') # raw and normalized
-generate_histograms('uni_mix_reduced_output.wav') # 
+def number_of_samples(filename):
+    wav_file = wave.open(filename, 'r')
+    framerate = wav_file.getframerate()
+    num_frames = wav_file.getnframes()
+    wav_file.close()
+    return num_frames
+
+def count_samples():
+    for file in ['test_rec.wav', 'processed2.wav', 'sensor_1.wav', 'sensor_2.wav', 'sensor_3.wav', 'uni_mix_reduced_output.wav']:
+        print(f'Number of samples in {file}: {number_of_samples(file)}')
+        # all samples have 9595771 frames
+    return
+
+def manhattan_distance_of_volume(file_one, file_two):
+    wav_file_one = wave.open(file_one, 'r')
+    wav_file_two = wave.open(file_two, 'r')
+    signal_one = wav_file_one.readframes(-1)
+    signal_two = wav_file_two.readframes(-1)
+    signal_one = np.frombuffer(signal_one, dtype='int16')
+    signal_two = np.frombuffer(signal_two, dtype='int16')
+    wav_file_one.close()
+    wav_file_two.close()
+    if len(signal_two) > len(signal_one):
+        signal_two = signal_two[::2]
+    elif len(signal_one) > len(signal_two):
+        signal_one = signal_one[::2]
+
+    volume_db_one = 20 * np.log10(np.abs(signal_one)+1) # warning when log 0
+    volume_db_two = 20 * np.log10(np.abs(signal_two)+1)
+    #volume_db_one = volume_db_one[volume_db_one != -np.inf]
+    #volume_db_two = volume_db_two[volume_db_two != -np.inf]
+    manhattan_distance = np.sum(np.abs(volume_db_one - volume_db_two))
+    print(f'Manhattan distance of volume between {file_one} and {file_two}: {manhattan_distance}')
+    return manhattan_distance
+
+def manhattan_distance_amplitude(file_one, file_two):
+    wav_file_one = wave.open(file_one, 'r')
+    wav_file_two = wave.open(file_two, 'r')
+    signal_one = wav_file_one.readframes(-1)
+    signal_two = wav_file_two.readframes(-1)
+    signal_one = np.frombuffer(signal_one, dtype='int16')
+    signal_two = np.frombuffer(signal_two, dtype='int16')
+
+    # remove every second value from signal_two if its longer than signal_one
+    if len(signal_one) > len(signal_two):
+        signal_one = signal_one[::2]
+
+    wav_file_one.close()
+    wav_file_two.close()
+    manhattan_distance = np.sum(np.abs(signal_one - signal_two))
+    manhattan_distance = "{:.3e}".format(manhattan_distance)
+    print(f'Manhattan distance of amplitude between {file_one} and {file_two}: {manhattan_distance}')
+    return manhattan_distance
+
+def manhattan_distance_frequence(file_one, file_two):
+    wav_file_one = wave.open(file_one, 'r')
+    wav_file_two = wave.open(file_two, 'r')
+    signal_one = wav_file_one.readframes(-1)
+    signal_two = wav_file_two.readframes(-1)
+    signal_one = np.frombuffer(signal_one, dtype='int16')
+    signal_two = np.frombuffer(signal_two, dtype='int16')
+
+    # remove every second value from signal_two if its longer than signal_one
+    if len(signal_one) > len(signal_two):
+        signal_one = signal_one[::2]
+
+    wav_file_one.close()
+    wav_file_two.close()
+    spectrum_one = np.abs(fft(signal_one))
+    spectrum_two = np.abs(fft(signal_two))
+    manhattan_distance = np.sum(np.abs(spectrum_one - spectrum_two))
+    # format manhattan_distance as scientific notation, with 3 decimal places
+    manhattan_distance = "{:.3e}".format(manhattan_distance)
+    print(f'Manhattan distance of {manhattan_distance} between frequencies of {file_one} and {file_two}: ')
+    return manhattan_distance
+
+if False:
+    generate_histograms('test_rec.wav') # test set from pixel
+    generate_histograms('processed2.wav') # simple addition fusion
+    generate_histograms('sensor_1.wav') # raw and normalized
+    generate_histograms('sensor_2.wav') # raw and normalized
+    generate_histograms('sensor_3.wav') # raw and normalized
+    generate_histograms('uni_mix_reduced_output.wav') # 
+
+if True:
+    for file in ['test_rec.wav', 'sensor_1.wav', 'sensor_2.wav', 'sensor_3.wav', 'processed2.wav', 'uni_mix_reduced_output.wav']:
+        #manhattan_distance_frequence('test_rec.wav', file)
+        manhattan_distance_amplitude('test_rec.wav', file)

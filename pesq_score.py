@@ -71,7 +71,7 @@ def pesq_of_two_raw(file_one, file_two):
 
     return get_pesq_score(trim_one, trim_two)
 
-pesq_of_two_raw('test_rec.wav', 'uni_mix_reduced_output.wav')
+pesq_of_two_raw('sensor_1.wav', 'sensor_2.wav')
 # 1.26, 1.13, 1.22 for sensor 1, 2, 3 compared to test_rec
 # unix mixed wave was 1.03
 # proccessed2 was 1.04
